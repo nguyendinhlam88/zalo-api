@@ -13,7 +13,6 @@ chatController.send = async (req, res, next) => {
         const {
             name, // Tên cuộc hội thoại, vì có thể chỉnh sửa ?
             chatId,
-            receivedId,
             member,
             type,
             content
@@ -30,10 +29,7 @@ chatController.send = async (req, res, next) => {
                 chat = new ChatModel({
                     name: name,
                     type: PRIVATE_CHAT,
-                    member: [
-                       receivedId,
-                       userId
-                    ]
+                    member: member
                 });
                 await chat.save();
                 chatIdSend = chat._id;
@@ -62,9 +58,19 @@ chatController.send = async (req, res, next) => {
                     content: content
                 });
                 await message.save();
-                let messageNew = await MessagesModel.findById(message._id).populate('chat').populate('user');
+                let messageNew = await MessagesModel.findById(message._id).populate('chat').populate({
+                    path: "user",
+                    select:
+                        "id phonenumber username gender birthday avatar blocked_inbox blocked_diary",
+                    models: "Users",
+                    populate: {
+                        path: "avatar",
+                        select: "_id fileName",
+                        model: "Documents",
+                    },
+                });
                 return res.status(httpStatus.OK).json({
-                    data: messageNew
+                    data: messageNew,
                 });
             } else {
                 return res.status(httpStatus.OK).json({
@@ -85,20 +91,31 @@ chatController.send = async (req, res, next) => {
         });
     }
 }
+
 chatController.getMessages = async (req, res, next) => {
-    try {
-        let messages = await MessagesModel.find({
-            chat: req.params.chatId
-        }).populate('user');
-        return res.status(200).json({
-            data: messages
-        });
-    } catch (e) {
-        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-            message: e.message
-        });
-    }
-}
+  try {
+    let messages = await MessagesModel.find({
+      chat: req.params.chatId,
+    }).populate({
+      path: "user",
+      select:
+        "id phonenumber username gender birthday avatar blocked_inbox blocked_diary",
+      models: "Users",
+      populate: {
+        path: "avatar",
+        select: "_id fileName",
+        model: "Documents",
+      },
+    });
+    return res.status(httpStatus.OK).json({
+      data: messages,
+    });
+  } catch (e) {
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      message: e.message,
+    });
+  }
+};
 
 chatController.getChats = async (req, res, next) => {
     try {
@@ -163,17 +180,11 @@ chatController.getGroupChats = async (req, res, next) => {
 
 chatController.createGroupChat = async (req, res, next) => {
     try {
-        console.log("+++++");
-        console.log(req.body);
-        console.log("+++++");
         const {
             name, // Tên cuộc hội thoại, vì có thể chỉnh sửa ?
             member,
         } = req.body;
-        console.log("========");
-        console.log(name);
-        console.log(member);
-        console.log("========");
+        
         chat = new ChatModel({
                     name: name,
                     type: GROUP_CHAT,
@@ -181,8 +192,29 @@ chatController.createGroupChat = async (req, res, next) => {
                 });
         await chat.save();
         var chatId = await chat._id;
-        console.log("==========");
-        console.log(chatId)
+        return res.status(httpStatus.OK).json({
+                    data: chat,
+                    message: 'Create group chat success',
+                    response: 'CREATE_GROUP_CHAT_SUCCESS'
+                });
+
+    } catch (e) {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+            message: e.message
+        });
+    }
+}
+
+chatController.createChat = async (req, res, next) => {
+    try {
+        const {
+            member,
+        } = req.body;
+        chat = new ChatModel({
+                    type: PRIVATE_CHAT,
+                    member: member
+                });
+        await chat.save();
         return res.status(httpStatus.OK).json({
                     data: chat,
                     message: 'Create group chat success',

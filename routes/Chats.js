@@ -34,4 +34,10 @@ chatsRoutes.post(
     asyncWrapper(chatController.createGroupChat),
 );
 
+chatsRoutes.post(
+    "/createChat",
+    auth,
+    asyncWrapper(chatController.createChat),
+);
+
 module.exports = chatsRoutes;
