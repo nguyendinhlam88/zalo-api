@@ -16,6 +16,12 @@ chatsRoutes.get(
     asyncWrapper(chatController.getMessages),
 );
 
+chatsRoutes.post(
+    "/delMessages/:chatId",
+    auth,
+    asyncWrapper(chatController.delMessages),
+);
+
 chatsRoutes.get(
     "/getChats",
     auth,

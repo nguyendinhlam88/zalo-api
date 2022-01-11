@@ -117,6 +117,24 @@ chatController.getMessages = async (req, res, next) => {
   }
 };
 
+// Xoá hết message của một cuộc trò chuyện
+chatController.delMessages = async (req, res, next) => {
+  try {
+    let chatId = req.params.chatId;
+    console.log(chatId);
+    await MessagesModel.deleteMany({chat: chatId});
+
+    return res.status(httpStatus.OK).json({
+      data: "DELETE SUCCESS",
+    });
+  } catch (e) {
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      message: e.message,
+    });
+  }
+};
+
+
 chatController.getChats = async (req, res, next) => {
     try {
         let chats = await ChatModel.find({
